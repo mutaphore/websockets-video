@@ -1,7 +1,16 @@
 
 const video = document.querySelector("#videoElement");
-
+const start = document.querySelector("#startButton");
+const stop = document.querySelector("#stopButton");
 const socket = new WebSocket("ws://localhost:8001");
+
+var mediaRecorder = null;
+
+stop.addEventListener('click', (event) => {
+    if (mediaRecorder !== null && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+    }
+});
 
 socket.addEventListener('open', (event) => { 
     socket.send('Hello Server!'); 
@@ -17,7 +26,7 @@ socket.addEventListener('close', (event) => {
 
 function handleVideoData(event) {
     if (event.data.size > 0) {
-        console.log("video data");
+        console.log("video chunk data type: " + event.data.type);
         socket.send(event.data);
     }
 }
@@ -25,7 +34,7 @@ function handleVideoData(event) {
 async function main() {
     if (navigator.mediaDevices.getUserMedia) {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             video.srcObject = stream;
 
             var options;
@@ -42,7 +51,7 @@ async function main() {
                 return
             }
 
-            const mediaRecorder = new MediaRecorder(stream, options);
+            mediaRecorder = new MediaRecorder(stream, options);
             mediaRecorder.ondataavailable = handleVideoData;
             mediaRecorder.start(2000);
         } catch(err) {
